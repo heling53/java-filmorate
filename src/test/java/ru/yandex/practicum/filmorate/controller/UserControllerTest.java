@@ -57,13 +57,25 @@ class UserControllerTest {
     }
 
     @Test
-    void createUser_InvalidEmail_ReturnsBadRequest() throws Exception {
+    void createUser_NullName_SetsLoginAsName() throws Exception {
+        validUser.setName(null);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("testlogin"));
+    }
+
+    @Test
+    void createUser_InvalidEmailNoAt_ReturnsBadRequest() throws Exception {
         validUser.setEmail("invalid-email");
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validUser)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Электронная почта должна содержать символ @"));
     }
 
     @Test
@@ -73,7 +85,19 @@ class UserControllerTest {
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validUser)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Электронная почта не может быть пустой"));
+    }
+
+    @Test
+    void createUser_NullEmail_ReturnsBadRequest() throws Exception {
+        validUser.setEmail(null);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validUser)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Электронная почта не может быть пустой"));
     }
 
     @Test
@@ -83,7 +107,30 @@ class UserControllerTest {
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validUser)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Логин не может содержать пробелы"));
+    }
+
+    @Test
+    void createUser_EmptyLogin_ReturnsBadRequest() throws Exception {
+        validUser.setLogin("");
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validUser)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Логин не может быть пустым"));
+    }
+
+    @Test
+    void createUser_NullLogin_ReturnsBadRequest() throws Exception {
+        validUser.setLogin(null);
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validUser)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Логин не может быть пустым"));
     }
 
     @Test
@@ -93,17 +140,28 @@ class UserControllerTest {
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validUser)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Дата рождения не может быть в будущем"));
     }
 
     @Test
-    void updateUser_NotFound_ReturnsBadRequest() throws Exception {
-        validUser.setId(999);
+    void updateUser_NotFound_ReturnsNotFound() throws Exception {
+        // Сначала создаем пользователя
+        String response = mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validUser)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        User createdUser = objectMapper.readValue(response, User.class);
+        createdUser.setId(999); // Меняем id на несуществующий
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validUser)))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(createdUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Пользователь с указанным id не найден"));
     }
 
     @Test

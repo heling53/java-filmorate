@@ -52,7 +52,8 @@ class FilmControllerTest {
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validFilm)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Название не может быть пустым"));
     }
 
     @Test
@@ -62,7 +63,8 @@ class FilmControllerTest {
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validFilm)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Максимальная длина описания — 200 символов"));
     }
 
     @Test
@@ -72,7 +74,8 @@ class FilmControllerTest {
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validFilm)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Дата релиза должна быть не раньше 28 декабря 1895 года"));
     }
 
     @Test
@@ -82,17 +85,50 @@ class FilmControllerTest {
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validFilm)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Продолжительность фильма должна быть положительным числом"));
     }
 
     @Test
-    void updateFilm_NotFound_ReturnsBadRequest() throws Exception {
-        validFilm.setId(999);
+    void createFilm_NullDuration_ReturnsBadRequest() throws Exception {
+        validFilm.setDuration(null);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validFilm)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Продолжительность фильма должна быть указана"));
+    }
+
+    @Test
+    void createFilm_NullReleaseDate_ReturnsBadRequest() throws Exception {
+        validFilm.setReleaseDate(null);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validFilm)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Дата релиза должна быть указана"));
+    }
+
+    @Test
+    void updateFilm_NotFound_ReturnsNotFound() throws Exception {
+        // Сначала создаем фильм
+        String response = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validFilm)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Film createdFilm = objectMapper.readValue(response, Film.class);
+        createdFilm.setId(999); // Меняем id на несуществующий
 
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validFilm)))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(createdFilm)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Фильм с указанным id не найден"));
     }
 
     @Test
