@@ -13,7 +13,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ErrorHandler {
-    private final static Logger log = LoggerFactory.getLogger(ErrorHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(ErrorHandler.class);
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
