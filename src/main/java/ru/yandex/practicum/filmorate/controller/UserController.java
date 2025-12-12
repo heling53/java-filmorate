@@ -41,7 +41,7 @@ public class UserController {
         validateUser(user);
         if (user.getId() == null || !users.containsKey(user.getId())) {
             log.error("Пользователь с id={} не найден", user.getId());
-            throw new NotFoundException("Пользователь с таким id не найден");
+            throw new NotFoundException("Пользователь с указанным id не найден");
         }
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
@@ -52,10 +52,17 @@ public class UserController {
     }
 
     private void validateUser(User user) {
-        if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
-            log.error("Электронная почта не может быть пустой и должна содержать символ @");
-            throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
+        // Проверка email
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            log.error("Электронная почта не может быть пустой");
+            throw new ValidationException("Электронная почта не может быть пустой");
         }
+        if (!user.getEmail().contains("@")) {
+            log.error("Электронная почта должна содержать символ @");
+            throw new ValidationException("Электронная почта должна содержать символ @");
+        }
+
+        // Проверка логина
         if (user.getLogin() == null || user.getLogin().isBlank()) {
             log.error("Логин не может быть пустым");
             throw new ValidationException("Логин не может быть пустым");
@@ -64,6 +71,8 @@ public class UserController {
             log.error("Логин не может содержать пробелы");
             throw new ValidationException("Логин не может содержать пробелы");
         }
+
+        // Проверка даты рождения
         if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             log.error("Дата рождения не может быть в будущем");
             throw new ValidationException("Дата рождения не может быть в будущем");
