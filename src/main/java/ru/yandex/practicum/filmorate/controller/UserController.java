@@ -1,11 +1,11 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-
+import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,13 +14,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
-@Slf4j
 public class UserController {
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
     private final Map<Integer, User> users = new HashMap<>();
     private Integer nextId = 1;
 
     @GetMapping
-    public List<User> getUsers() {
+    public List<User> getAllUsers() {
         return new ArrayList<>(users.values());
     }
 
@@ -38,21 +38,20 @@ public class UserController {
 
     @PutMapping
     public User updateUser(@RequestBody User user) {
+        validateUser(user);
         if (user.getId() == null || !users.containsKey(user.getId())) {
             log.error("Пользователь с id={} не найден", user.getId());
             throw new NotFoundException("Пользователь с таким id не найден");
         }
-        validateUser(user);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
         users.put(user.getId(), user);
-        log.info("Обновлены данные пользователя: {}", user);
+        log.info("Обновлён пользователь: {}", user);
         return user;
-
     }
 
-    private void validateUser(final User user) {
+    private void validateUser(User user) {
         if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
             log.error("Электронная почта не может быть пустой и должна содержать символ @");
             throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
