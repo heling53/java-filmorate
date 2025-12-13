@@ -19,10 +19,10 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
         String errorMessage = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .map(error -> error.getDefaultMessage())
                 .findFirst()
                 .orElse("Ошибка валидации");
-        log.error("Ошибка валидации полей: {}", errorMessage);
+        log.error("Ошибка валидации: {}", errorMessage);
         return Map.of("error", errorMessage);
     }
 
