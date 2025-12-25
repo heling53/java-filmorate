@@ -42,7 +42,7 @@ public class UserService {
         User user = userStorage.getUserById(id);
         if (user == null) {
             log.error("Пользователь с id={} не найден", id);
-            throw new NotFoundException("Пользователь с id=" + id + " не найден");
+            throw new NotFoundException("Пользователь с указанным id не найден");
         }
         return user;
     }
