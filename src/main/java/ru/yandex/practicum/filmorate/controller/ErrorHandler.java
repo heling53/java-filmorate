@@ -3,11 +3,9 @@ package ru.yandex.practicum.filmorate.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.util.Map;
 
@@ -17,33 +15,33 @@ public class ErrorHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
-        String errorMessage = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getDefaultMessage())
+    public Map<String, String> handleValidation(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
                 .findFirst()
+                .map(err -> err.getDefaultMessage())
                 .orElse("Ошибка валидации");
-        log.error("Ошибка валидации: {}", errorMessage);
-        return Map.of("error", errorMessage);
+        log.error("400 Validation error: {}", message);
+        return Map.of("error", message);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidationException(final ValidationException e) {
-        log.error("Ошибка валидации: {}", e.getMessage());
+    public Map<String, String> handleValidationException(ValidationException e) {
+        log.error("400 Validation error: {}", e.getMessage());
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFoundException(final NotFoundException e) {
-        log.error("Не найдено: {}", e.getMessage());
+    public Map<String, String> handleNotFound(NotFoundException e) {
+        log.error("404 Not found: {}", e.getMessage());
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleOtherExceptions(final Throwable e) {
-        log.error("Произошла непредвиденная ошибка: {}", e.getMessage(), e);
+    public Map<String, String> handleOther(Throwable e) {
+        log.error("500 Internal error", e);
         return Map.of("error", "Произошла непредвиденная ошибка");
     }
 }
