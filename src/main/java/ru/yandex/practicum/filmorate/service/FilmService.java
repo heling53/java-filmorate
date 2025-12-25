@@ -84,7 +84,7 @@ public class FilmService {
     public Film updateFilm(Film film) {
         log.info("Обновление фильма: {}", film);
 
-        if(filmStorage.getFilmById(film.getId()) == null) {
+        if (filmStorage.getFilmById(film.getId()) == null) {
             log.error("Фильм с id={} не найден для обновления", film.getId());
             throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
         }
