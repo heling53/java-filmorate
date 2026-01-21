@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -28,10 +29,10 @@ public class UserController {
 
     @PutMapping
     public User update(@Valid @RequestBody User user) {
-        log.info("PUT /users - обновление пользователя с id={}", user.getId());
+        log.info("PUT /users - обновление пользователя");
 
-        if (user.getId() == null || user.getId() <= 0) {
-            throw new NotFoundException("ID пользователя должен быть положительным числом");
+        if (user.getId() == null) {
+            throw new ValidationException("ID пользователя не может быть пустым");
         }
 
         return userService.updateUser(user);

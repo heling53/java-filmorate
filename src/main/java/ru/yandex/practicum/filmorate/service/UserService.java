@@ -25,28 +25,16 @@ public class UserService {
     }
 
     public User updateUser(User user) {
-        if (user.getId() == null) {
-            throw new ValidationException("ID пользователя не может быть null");
+        if (user.getId() == null || userStorage.getUserById(user.getId()) == null) {
+            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
         }
 
         if (user.getName() == null || user.getName().isBlank()) {
-            if (user.getLogin() == null) {
-                throw new ValidationException("Логин не может быть null");
-            }
             user.setName(user.getLogin());
         }
 
-        User existingUser = userStorage.getUserById(user.getId());
-        if (existingUser == null) {
-            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
-        }
-
         log.info("Обновление пользователя с id={}", user.getId());
-        User updated = userStorage.updateUser(user);
-        if (updated == null) {
-            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
-        }
-        return updated;
+        return userStorage.updateUser(user);
     }
 
     public List<User> getAllUsers() {
