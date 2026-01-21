@@ -29,7 +29,13 @@ public class ErrorHandler {
         String message = e.getBindingResult()
                 .getFieldErrors().stream()
                 .findFirst()
-                .map(err -> err.getDefaultMessage())
+                .map(err -> {
+                    if ("login".equals(err.getField()) && err.getCode() != null &&
+                            err.getCode().contains("AssertTrue")) {
+                        return "Логин не может содержать пробелы";
+                    }
+                    return err.getDefaultMessage();
+                })
                 .orElse("Ошибка валидации");
 
         log.warn("400 Bad Request (MethodArgumentNotValidException): {}", message);

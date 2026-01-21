@@ -28,6 +28,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User createUser(User user) {
+
+        if (user.getName() == null) {
+            user.setName(user.getLogin() != null ? user.getLogin() : "");
+        }
+
         String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
         jdbcTemplate.update(
                 sql,
@@ -38,11 +43,10 @@ public class UserDbStorage implements UserStorage {
         );
 
         Integer id = jdbcTemplate.queryForObject(
-                "SELECT id FROM users WHERE email = ? AND login = ?",
-                Integer.class,
-                user.getEmail(),
-                user.getLogin()
+                "SELECT LAST_INSERT_ID()",
+                Integer.class
         );
+
         user.setId(id);
         return user;
     }

@@ -2,8 +2,6 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -23,30 +21,17 @@ public class UserController {
     }
 
     @PostMapping
-    public User create(@Valid @RequestBody User user, BindingResult bindingResult) {
+    public User create(@Valid @RequestBody User user) {
         log.info("POST /users - создание пользователя");
-
-        if (user.getLogin() != null && user.getLogin().contains(" ")) {
-            bindingResult.rejectValue("login", "error.user", "Логин не может содержать пробелы");
-        }
-
-        if (bindingResult.hasErrors()) {
-            throw new ValidationException(getFirstErrorMessage(bindingResult));
-        }
-
         return userService.createUser(user);
     }
 
     @PutMapping
-    public User update(@Valid @RequestBody User user, BindingResult bindingResult) {
+    public User update(@Valid @RequestBody User user) {
         log.info("PUT /users - обновление пользователя с id={}", user.getId());
 
-        if (user.getLogin() != null && user.getLogin().contains(" ")) {
-            bindingResult.rejectValue("login", "error.user", "Логин не может содержать пробелы");
-        }
-
-        if (bindingResult.hasErrors()) {
-            throw new ValidationException(getFirstErrorMessage(bindingResult));
+        if (user.getId() == null) {
+            throw new ValidationException("ID пользователя не может быть null");
         }
 
         return userService.updateUser(user);
@@ -89,12 +74,5 @@ public class UserController {
                                        @PathVariable Integer otherId) {
         log.info("GET /users/{}/friends/common/{} - получение общих друзей", id, otherId);
         return userService.getCommonFriends(id, otherId);
-    }
-
-    private String getFirstErrorMessage(BindingResult bindingResult) {
-        return bindingResult.getFieldErrors().stream()
-                .findFirst()
-                .map(FieldError::getDefaultMessage)
-                .orElse("Ошибка валидации");
     }
 }

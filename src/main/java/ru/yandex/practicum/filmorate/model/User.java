@@ -24,4 +24,9 @@ public class User {
     private LocalDate birthday;
 
     private Set<Integer> friends = new HashSet<>();
+
+    @AssertTrue(message = "Логин не может содержать пробелы")
+    public boolean isLoginWithoutSpaces() {
+        return login == null || !login.contains(" ");
+    }
 }
