@@ -77,11 +77,10 @@ public class UserDbStorage implements UserStorage {
     public User getUserById(Integer id) {
         String sql = "SELECT * FROM users WHERE id = ?";
         List<User> users = jdbcTemplate.query(sql, this::mapRowToUser, id);
-
         if (users.isEmpty()) {
             return null;
         }
-        return users.getFirst();
+        return users.get(0);
     }
 
     @Override
@@ -96,7 +95,6 @@ public class UserDbStorage implements UserStorage {
         jdbcTemplate.update(sql, userId, friendId);
     }
 
-    @Override
     public List<User> getFriends(Integer userId) {
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friendships f ON u.id = f.friend_id " +

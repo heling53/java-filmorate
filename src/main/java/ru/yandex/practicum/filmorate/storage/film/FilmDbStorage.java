@@ -102,7 +102,6 @@ public class FilmDbStorage implements FilmStorage {
             return null;
         }
 
-        // Обновляем жанры
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         saveGenres(film);
         return film;
@@ -150,16 +149,14 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private Mpa getMpa(Integer id) {
-        return jdbcTemplate.queryForObject(
-                "SELECT * FROM mpa WHERE id = ?",
-                (rs, rowNum) -> {
-                    Mpa mpa = new Mpa();
-                    mpa.setId(rs.getInt("id"));
-                    mpa.setName(rs.getString("name"));
-                    return mpa;
-                },
-                id
-        );
+        String sql = "SELECT * FROM mpa WHERE id = ?";
+        List<Mpa> mpaList = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Mpa mpa = new Mpa();
+            mpa.setId(rs.getInt("id"));
+            mpa.setName(rs.getString("name"));
+            return mpa;
+        }, id);
+        return mpaList.isEmpty() ? null : mpaList.get(0);
     }
 
     private void loadGenres(Film film) {
