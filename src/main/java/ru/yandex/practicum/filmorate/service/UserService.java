@@ -53,7 +53,6 @@ public class UserService {
         getUserById(friendId);
 
         userStorage.addFriend(userId, friendId);
-        log.info("Пользователь {} добавил в друзья пользователя {}", userId, friendId);
     }
 
     public void removeFriend(Integer userId, Integer friendId) {
