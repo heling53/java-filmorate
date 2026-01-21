@@ -2,18 +2,15 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.List;
 
 
 import ru.yandex.practicum.filmorate.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 
-//@Validated
+
 @RestController
 @RequestMapping("/users")
 @Slf4j
