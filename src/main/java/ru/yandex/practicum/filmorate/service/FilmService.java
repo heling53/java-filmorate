@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
@@ -12,7 +13,6 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class FilmService {
-
     private final FilmStorage filmStorage;
 
     public Film createFilm(Film film) {
@@ -20,6 +20,10 @@ public class FilmService {
     }
 
     public Film updateFilm(Film film) {
+        Film existingFilm = filmStorage.getFilmById(film.getId());
+        if (existingFilm == null) {
+            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
+        }
         return filmStorage.updateFilm(film);
     }
 
@@ -28,18 +32,10 @@ public class FilmService {
     }
 
     public Film getFilmById(Integer id) {
-        return filmStorage.getFilmById(id);
-    }
-
-    public void addLike(Integer filmId, Integer userId) {
-        filmStorage.addLike(filmId, userId);
-    }
-
-    public void removeLike(Integer filmId, Integer userId) {
-        filmStorage.removeLike(filmId, userId);
-    }
-
-    public List<Film> getPopularFilms(Integer count) {
-        return filmStorage.getPopularFilms(count);
+        Film film = filmStorage.getFilmById(id);
+        if (film == null) {
+            throw new NotFoundException("Фильм с id=" + id + " не найден");
+        }
+        return film;
     }
 }

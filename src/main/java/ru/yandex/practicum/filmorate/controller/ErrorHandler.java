@@ -29,26 +29,7 @@ public class ErrorHandler {
         String message = e.getBindingResult()
                 .getFieldErrors().stream()
                 .findFirst()
-                .map(err -> {
-                    String errorMsg = err.getDefaultMessage();
-                    if (errorMsg != null && !errorMsg.isEmpty()) {
-                        return errorMsg;
-                    }
-
-                    String fieldName = err.getField();
-                    switch (fieldName) {
-                        case "login":
-                            return "Логин не может быть пустым";
-                        case "name":
-                            return "Название не может быть пустым";
-                        case "duration":
-                            return "Продолжительность фильма должна быть положительным числом";
-                        case "releaseDate":
-                            return "Дата релиза должна быть указана";
-                        default:
-                            return "Ошибка валидации поля: " + fieldName;
-                    }
-                })
+                .map(err -> err.getDefaultMessage())
                 .orElse("Ошибка валидации");
 
         log.warn("400 Bad Request (MethodArgumentNotValidException): {}", message);

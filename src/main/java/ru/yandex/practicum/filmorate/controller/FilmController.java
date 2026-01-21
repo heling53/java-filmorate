@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -11,61 +10,71 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 import java.time.LocalDate;
 import java.util.List;
 
-@Slf4j
-@Validated
 @RestController
 @RequestMapping("/films")
+@Slf4j
 public class FilmController {
-    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     private final FilmService filmService;
+    private static final LocalDate FIRST_FILM_DATE = LocalDate.of(1895, 12, 28);
 
     public FilmController(FilmService filmService) {
         this.filmService = filmService;
     }
 
-    @GetMapping
-    public List<Film> getAllFilms() {
-        return filmService.getAllFilms();
-    }
-
-    @GetMapping("/{id}")
-    public Film getFilmById(@PathVariable Integer id) {
-        return filmService.getFilmById(id);
-    }
-
     @PostMapping
-    public Film createFilm(@Valid @RequestBody Film film) {
-        validateReleaseDate(film);
+    public Film create(@Valid @RequestBody Film film) {
+        log.info("POST /films - создание фильма");
+        validateFilm(film);
         return filmService.createFilm(film);
     }
 
     @PutMapping
-    public Film updateFilm(@Valid @RequestBody Film film) {
-        validateReleaseDate(film);
+    public Film update(@Valid @RequestBody Film film) {
+        log.info("PUT /films - обновление фильма с id={}", film.getId());
+        validateFilm(film);
         return filmService.updateFilm(film);
     }
 
-    @PutMapping("/{id}/like/{userId}")
-    public void addLike(@PathVariable Integer id, @PathVariable Integer userId) {
-        filmService.addLike(id, userId);
+    @GetMapping
+    public List<Film> getAll() {
+        log.info("GET /films - получение всех фильмов");
+        return filmService.getAllFilms();
     }
 
-    @DeleteMapping("/{id}/like/{userId}")
-    public void removeLike(@PathVariable Integer id, @PathVariable Integer userId) {
-        filmService.removeLike(id, userId);
+    @GetMapping("/{id}")
+    public Film getById(@PathVariable Integer id) {
+        log.info("GET /films/{} - получение фильма", id);
+        return filmService.getFilmById(id);
     }
 
-    @GetMapping("/popular")
-    public List<Film> getPopular(@RequestParam(defaultValue = "10") Integer count) {
-        return filmService.getPopularFilms(count);
-    }
+    private void validateFilm(Film film) {
+        if (film.getName() == null || film.getName().isBlank()) {
+            throw new ValidationException("Название не может быть пустым");
+        }
 
-    private void validateReleaseDate(Film film) {
-        if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
-            throw new ValidationException(
-                    "Дата релиза должна быть не раньше 28 декабря 1895 года"
-            );
+        if (film.getDescription() == null || film.getDescription().isBlank()) {
+            throw new ValidationException("Описание не может быть пустым");
+        }
+
+        if (film.getDescription().length() > 200) {
+            throw new ValidationException("Максимальная длина описания — 200 символов");
+        }
+
+        if (film.getReleaseDate() == null) {
+            throw new ValidationException("Дата релиза должна быть указана");
+        }
+
+        if (film.getReleaseDate().isBefore(FIRST_FILM_DATE)) {
+            throw new ValidationException("Дата релиза должна быть не раньше 28 декабря 1895 года");
+        }
+
+        if (film.getDuration() == null) {
+            throw new ValidationException("Продолжительность фильма должна быть указана");
+        }
+
+        if (film.getDuration() <= 0) {
+            throw new ValidationException("Продолжительность фильма должна быть положительным числом");
         }
     }
 }

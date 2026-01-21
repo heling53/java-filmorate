@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -22,12 +23,14 @@ public class UserController {
     @PostMapping
     public User create(@Valid @RequestBody User user) {
         log.info("POST /users - создание пользователя");
+        validateUser(user);
         return userService.createUser(user);
     }
 
     @PutMapping
     public User update(@Valid @RequestBody User user) {
         log.info("PUT /users - обновление пользователя с id={}", user.getId());
+        validateUser(user);
         return userService.updateUser(user);
     }
 
@@ -68,5 +71,23 @@ public class UserController {
                                        @PathVariable Integer otherId) {
         log.info("GET /users/{}/friends/common/{} - получение общих друзей", id, otherId);
         return userService.getCommonFriends(id, otherId);
+    }
+
+    private void validateUser(User user) {
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
+            throw new ValidationException("Логин не может быть пустым");
+        }
+
+        if (user.getLogin().contains(" ")) {
+            throw new ValidationException("Логин не может содержать пробелы");
+        }
+
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new ValidationException("Электронная почта не может быть пустой");
+        }
+
+        if (!user.getEmail().contains("@")) {
+            throw new ValidationException("Электронная почта должна содержать символ @");
+        }
     }
 }

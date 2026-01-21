@@ -13,15 +13,15 @@ public class User {
 
     private String name;
 
-    @NotBlank(message = "Логин не может быть пустым")
-    @Pattern(regexp = "^\\S+$", message = "Логин не может содержать пробелы")
+    @NotBlank
+    @Pattern(regexp = "^\\S+$")
     private String login;
 
-    @NotBlank(message = "Электронная почта не может быть пустой")
-    @Email(message = "Неверный формат email")
+    @NotBlank
+    @Email
     private String email;
 
-    @PastOrPresent(message = "Дата рождения не может быть в будущем")
+    @PastOrPresent
     private LocalDate birthday;
 
     private Set<Integer> friends = new HashSet<>();
