@@ -84,9 +84,8 @@ public class UserDbStorage implements UserStorage {
         return users.getFirst();
     }
 
-    @Override
     public void addFriend(Integer userId, Integer friendId) {
-        String sql = "INSERT INTO friendship (user_id, friend_id) VALUES (?, ?)";
+        String sql = "INSERT INTO user_friends (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, userId, friendId);
     }
 
