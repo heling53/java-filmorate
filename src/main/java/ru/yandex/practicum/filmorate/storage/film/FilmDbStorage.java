@@ -30,18 +30,9 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
-    @Override
     public Film getFilmById(Integer id) {
         String sql = "SELECT * FROM films WHERE id = ?";
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, id);
-
-        if (films.isEmpty()) {
-            return null;
-        }
-
-        Film film = films.get(0);
-        loadGenres(film);
-        return film;
     }
 
     @Override
@@ -122,9 +113,9 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(Integer count) {
         String sql = "SELECT f.* FROM films f " +
-                "LEFT JOIN (SELECT film_id, COUNT(user_id) as count FROM film_likes GROUP BY film_id) l " +
+                "LEFT JOIN (SELECT film_id, COUNT(user_id) AS cnt FROM film_likes GROUP BY film_id) l " +
                 "ON f.id = l.film_id " +
-                "ORDER BY l.count DESC, f.id ASC " +
+                "ORDER BY l.cnt DESC, f.id ASC " +
                 "LIMIT ?";
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);

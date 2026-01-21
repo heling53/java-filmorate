@@ -71,4 +71,31 @@ public class FilmService {
         return film;
     }
 
+    public void addLike(Integer filmId, Integer userId) {
+        getFilmById(filmId);
+
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE id = ?", Integer.class, userId);
+        if (count == null || count == 0) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+
+        filmStorage.addLike(filmId, userId);
+    }
+
+    public void removeLike(Integer filmId, Integer userId) {
+        getFilmById(filmId);
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE id = ?", Integer.class, userId);
+        if (count == null || count == 0) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+
+        filmStorage.removeLike(filmId, userId);
+    }
+
+    public List<Film> getPopularFilms(Integer count) {
+        return filmStorage.getPopularFilms(count);
+    }
+
 }
