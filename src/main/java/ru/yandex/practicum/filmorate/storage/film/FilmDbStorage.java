@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.*;
-import java.util.HashSet;
 import java.util.List;
 
 @Primary
