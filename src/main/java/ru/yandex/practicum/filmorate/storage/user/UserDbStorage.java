@@ -89,7 +89,7 @@ public class UserDbStorage implements UserStorage {
                 "ORDER BY u.id";
         return jdbcTemplate.query(sql, this::mapRowToUser, userId1, userId2);
     }
-
+    //123
     private User mapRowToUser(ResultSet rs, int rowNum) throws SQLException {
         User user = new User();
         user.setId(rs.getInt("id"));
