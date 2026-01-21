@@ -50,16 +50,16 @@ public class UserService {
     }
 
     public void addFriend(Integer userId, Integer friendId) {
-        User user = userStorage.getUserById(userId);
-        User friend = userStorage.getUserById(friendId);
+        getUserById(userId);
+        getUserById(friendId);
 
         userStorage.addFriend(userId, friendId);
         log.info("Пользователь {} добавил в друзья {}", userId, friendId);
     }
 
     public void removeFriend(Integer userId, Integer friendId) {
-        userStorage.getUserById(userId);
-        userStorage.getUserById(friendId);
+        getUserById(userId);
+        getUserById(friendId);
 
         userStorage.removeFriend(userId, friendId);
         log.info("Пользователь {} удалил из друзей {}", userId, friendId);
