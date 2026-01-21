@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -17,6 +18,10 @@ public class UserService {
     private final UserStorage userStorage;
 
     public User createUser(User user) {
+        if (user.getLogin() == null) {
+            throw new RuntimeException("Логин не может быть null");
+        }
+
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -26,6 +31,10 @@ public class UserService {
     }
 
     public User updateUser(User user) {
+        if (user.getId() == null) {
+            throw new ValidationException("ID пользователя не может быть null");
+        }
+
         User existingUser = userStorage.getUserById(user.getId());
         if (existingUser == null) {
             throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");

@@ -11,19 +11,18 @@ import java.util.Set;
 public class Film {
     private Integer id;
 
-    @NotBlank
+    @NotBlank(message = "Название не может быть пустым")
     private String name;
 
-    @NotBlank
-    @Size(max = 200)
+    @NotBlank(message = "Описание не может быть пустым")
+    @Size(max = 200, message = "Максимальная длина описания — 200 символов")
     private String description;
 
-    @NotNull
-    @PastOrPresent
+    @NotNull(message = "Дата релиза должна быть указана")
     private LocalDate releaseDate;
 
-    @NotNull
-    @Positive
+    @NotNull(message = "Продолжительность фильма должна быть указана")
+    @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Integer duration;
 
     private Mpa mpa;

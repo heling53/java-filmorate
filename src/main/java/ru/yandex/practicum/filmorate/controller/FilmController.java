@@ -25,14 +25,14 @@ public class FilmController {
     @PostMapping
     public Film create(@Valid @RequestBody Film film) {
         log.info("POST /films - создание фильма");
-        validateFilm(film);
+        validateFilmReleaseDate(film);
         return filmService.createFilm(film);
     }
 
     @PutMapping
     public Film update(@Valid @RequestBody Film film) {
         log.info("PUT /films - обновление фильма с id={}", film.getId());
-        validateFilm(film);
+        validateFilmReleaseDate(film);
         return filmService.updateFilm(film);
     }
 
@@ -48,33 +48,9 @@ public class FilmController {
         return filmService.getFilmById(id);
     }
 
-    private void validateFilm(Film film) {
-        if (film.getName() == null || film.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым");
-        }
-
-        if (film.getDescription() == null || film.getDescription().isBlank()) {
-            throw new ValidationException("Описание не может быть пустым");
-        }
-
-        if (film.getDescription().length() > 200) {
-            throw new ValidationException("Максимальная длина описания — 200 символов");
-        }
-
-        if (film.getReleaseDate() == null) {
-            throw new ValidationException("Дата релиза должна быть указана");
-        }
-
-        if (film.getReleaseDate().isBefore(FIRST_FILM_DATE)) {
+    private void validateFilmReleaseDate(Film film) {
+        if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(FIRST_FILM_DATE)) {
             throw new ValidationException("Дата релиза должна быть не раньше 28 декабря 1895 года");
-        }
-
-        if (film.getDuration() == null) {
-            throw new ValidationException("Продолжительность фильма должна быть указана");
-        }
-
-        if (film.getDuration() <= 0) {
-            throw new ValidationException("Продолжительность фильма должна быть положительным числом");
         }
     }
 }
