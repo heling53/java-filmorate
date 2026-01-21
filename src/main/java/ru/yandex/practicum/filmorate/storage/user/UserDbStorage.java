@@ -33,8 +33,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User createUser(User user) {
-        String sqlQuery = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
 
+        String sqlQuery = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -46,23 +49,27 @@ public class UserDbStorage implements UserStorage {
             return stmt;
         }, keyHolder);
 
-        if (keyHolder.getKey() != null) {
-            user.setId(keyHolder.getKey().intValue());
-        }
-
+        user.setId(keyHolder.getKey().intValue());
         return user;
     }
 
     @Override
     public User updateUser(User user) {
-        String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE user_id = ?";
+        String checkSql = "SELECT COUNT(*) FROM users WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, user.getId());
 
-        int rowsUpdated = jdbcTemplate.update(sql,
-                user.getEmail(), user.getLogin(), user.getName(), user.getBirthday(), user.getId());
-
-        if (rowsUpdated == 0) {
-            throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");
+        if (count == null || count == 0) {
+            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
         }
+
+        String sqlQuery = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
+        jdbcTemplate.update(sqlQuery,
+                user.getEmail(),
+                user.getLogin(),
+                user.getName(),
+                user.getBirthday(),
+                user.getId());
+
         return user;
     }
 
