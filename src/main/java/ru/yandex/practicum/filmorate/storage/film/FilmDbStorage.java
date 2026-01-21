@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -38,7 +37,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, id);
 
         if (films.isEmpty()) {
-            throw new NotFoundException("Фильм с id=" + id + " не найден");
+            return null;
         }
 
         Film film = films.get(0);
@@ -49,12 +48,16 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film createFilm(Film film) {
         if (film.getMpa() != null && film.getMpa().getId() != null) {
-            checkMpaExists(film.getMpa().getId());
+            if (!mpaExists(film.getMpa().getId())) {
+                return null;
+            }
         }
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             for (Genre genre : film.getGenres()) {
-                checkGenreExists(genre.getId());
+                if (!genreExists(genre.getId())) {
+                    return null;
+                }
             }
         }
 
@@ -70,9 +73,16 @@ public class FilmDbStorage implements FilmStorage {
         );
 
         Integer filmId = jdbcTemplate.queryForObject(
-                "SELECT MAX(id) FROM films",
+                "SELECT LAST_INSERT_ID()",
                 Integer.class
         );
+
+        if (filmId == null) {
+            filmId = jdbcTemplate.queryForObject(
+                    "SELECT MAX(id) FROM films",
+                    Integer.class
+            );
+        }
 
         film.setId(filmId);
         saveGenres(film);
@@ -82,12 +92,16 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film updateFilm(Film film) {
         if (film.getMpa() != null && film.getMpa().getId() != null) {
-            checkMpaExists(film.getMpa().getId());
+            if (!mpaExists(film.getMpa().getId())) {
+                return null;
+            }
         }
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             for (Genre genre : film.getGenres()) {
-                checkGenreExists(genre.getId());
+                if (!genreExists(genre.getId())) {
+                    return null;
+                }
             }
         }
 
@@ -103,9 +117,10 @@ public class FilmDbStorage implements FilmStorage {
         );
 
         if (updated == 0) {
-            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
+            return null;
         }
 
+        // Обновляем жанры
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         saveGenres(film);
         return film;
@@ -113,8 +128,9 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void addLike(Integer filmId, Integer userId) {
-        checkFilmExists(filmId);
-        checkUserExists(userId);
+        if (!filmExists(filmId) || !userExists(userId)) {
+            return;
+        }
 
         String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, filmId, userId);
@@ -129,9 +145,6 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void removeLike(Integer filmId, Integer userId) {
-        checkFilmExists(filmId);
-        checkUserExists(userId);
-
         String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
         jdbcTemplate.update(sql, filmId, userId);
     }
@@ -148,7 +161,6 @@ public class FilmDbStorage implements FilmStorage {
         films.forEach(this::loadGenres);
         return films;
     }
-
 
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
         Film film = new Film();
@@ -209,35 +221,27 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
-    private void checkFilmExists(Integer filmId) {
+    private boolean filmExists(Integer filmId) {
         String sql = "SELECT COUNT(*) FROM films WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId);
-        if (count == null || count == 0) {
-            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
-        }
+        return count != null && count > 0;
     }
 
-    private void checkUserExists(Integer userId) {
+    private boolean userExists(Integer userId) {
         String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId);
-        if (count == null || count == 0) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
+        return count != null && count > 0;
     }
 
-    private void checkMpaExists(Integer mpaId) {
+    private boolean mpaExists(Integer mpaId) {
         String sql = "SELECT COUNT(*) FROM mpa WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, mpaId);
-        if (count == null || count == 0) {
-            throw new NotFoundException("Рейтинг MPA с id=" + mpaId + " не найден");
-        }
+        return count != null && count > 0;
     }
 
-    private void checkGenreExists(Integer genreId) {
+    private boolean genreExists(Integer genreId) {
         String sql = "SELECT COUNT(*) FROM genres WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, genreId);
-        if (count == null || count == 0) {
-            throw new NotFoundException("Жанр с id=" + genreId + " не найден");
-        }
+        return count != null && count > 0;
     }
 }

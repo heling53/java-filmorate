@@ -29,8 +29,12 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User createUser(User user) {
 
-        if (user.getName() == null) {
+        if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin() != null ? user.getLogin() : "");
+        }
+
+        if (user.getBirthday() == null) {
+            throw new RuntimeException("Birthday cannot be null");
         }
 
         String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
@@ -42,10 +46,18 @@ public class UserDbStorage implements UserStorage {
                 user.getBirthday()
         );
 
-        Integer id = jdbcTemplate.queryForObject(
-                "SELECT LAST_INSERT_ID()",
-                Integer.class
-        );
+        Integer id;
+        try {
+            id = jdbcTemplate.queryForObject(
+                    "SELECT LAST_INSERT_ID()",
+                    Integer.class
+            );
+        } catch (Exception e) {
+            id = jdbcTemplate.queryForObject(
+                    "SELECT MAX(id) FROM users",
+                    Integer.class
+            );
+        }
 
         user.setId(id);
         return user;

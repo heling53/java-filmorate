@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -26,17 +28,23 @@ public class ErrorHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult()
-                .getFieldErrors().stream()
-                .findFirst()
-                .map(err -> {
-                    if ("login".equals(err.getField()) && err.getCode() != null &&
-                            err.getCode().contains("AssertTrue")) {
-                        return "Логин не может содержать пробелы";
-                    }
-                    return err.getDefaultMessage();
-                })
-                .orElse("Ошибка валидации");
+        List<FieldError> errors = e.getBindingResult().getFieldErrors();
+        String message = "Ошибка валидации";
+
+        for (FieldError error : errors) {
+            if ("login".equals(error.getField())) {
+                if (error.getCode() != null && error.getCode().contains("NotBlank")) {
+                    message = "Логин не может быть пустым";
+                    break;
+                }
+                if (error.getCode() != null && error.getCode().contains("Pattern")) {
+                    message = "Логин не может содержать пробелы";
+                    break;
+                }
+            }
+            message = error.getDefaultMessage();
+            break;
+        }
 
         log.warn("400 Bad Request (MethodArgumentNotValidException): {}", message);
         return Map.of("error", message);

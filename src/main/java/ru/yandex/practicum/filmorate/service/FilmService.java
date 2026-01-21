@@ -27,9 +27,14 @@ public class FilmService {
 
         Film existingFilm = filmStorage.getFilmById(film.getId());
         if (existingFilm == null) {
-            throw new NotFoundException("Фильм с указанным id не найден"); // ТОЧНО такое сообщение
+            throw new NotFoundException("Фильм с указанным id не найден");
         }
-        return filmStorage.updateFilm(film);
+
+        Film updated = filmStorage.updateFilm(film);
+        if (updated == null) {
+            throw new NotFoundException("Фильм с указанным id не найден");
+        }
+        return updated;
     }
 
     public List<Film> getAllFilms() {

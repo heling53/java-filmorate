@@ -14,19 +14,16 @@ public class User {
     private String name;
 
     @NotBlank(message = "Логин не может быть пустым")
+    @Pattern(regexp = "^\\S+$", message = "Логин не может содержать пробелы")
     private String login;
 
     @NotBlank(message = "Электронная почта не может быть пустой")
     @Email(message = "Электронная почта должна содержать символ @")
     private String email;
 
+    @NotNull(message = "Дата рождения должна быть указана")
     @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 
     private Set<Integer> friends = new HashSet<>();
-
-    @AssertTrue(message = "Логин не может содержать пробелы")
-    public boolean isLoginWithoutSpaces() {
-        return login == null || !login.contains(" ");
-    }
 }
