@@ -26,7 +26,7 @@ public class UserController {
     }
 
     @PutMapping
-    public User update(@RequestBody User user) {
+    public User update(@Valid @RequestBody User user) {
         log.info("PUT /users - обновление пользователя");
         return userService.updateUser(user);
     }
