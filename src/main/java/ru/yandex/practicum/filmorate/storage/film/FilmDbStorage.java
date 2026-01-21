@@ -110,18 +110,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void addLike(Integer filmId, Integer userId) {
-        if (!filmExists(filmId) || !userExists(userId)) {
-            return;
-        }
-
-        String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
-        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, filmId, userId);
-
-        if (count != null && count > 0) {
-            return;
-        }
-
-        String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
+        String sql = "MERGE INTO film_likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, filmId, userId);
     }
 
@@ -136,7 +125,7 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT f.* FROM films f " +
                 "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
                 "GROUP BY f.id " +
-                "ORDER BY COUNT(fl.user_id) DESC, f.id ASC " +
+                "ORDER BY COUNT(fl.user_id) DESC " +
                 "LIMIT ?";
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
