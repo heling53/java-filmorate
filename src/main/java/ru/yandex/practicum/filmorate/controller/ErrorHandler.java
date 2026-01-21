@@ -30,6 +30,7 @@ public class ErrorHandler {
         log.warn("Ошибка валидации: {}", message);
         return Map.of("error", message != null ? message : "Ошибка валидации");
     }
+
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Map<String, String> handleNotFound(NotFoundException e) {
