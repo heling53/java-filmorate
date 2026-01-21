@@ -26,9 +26,17 @@ public class ErrorHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .filter(fieldError -> "login".equals(fieldError.getField()))
+                .map(fieldError -> {
+                    if ("NotBlank".equals(fieldError.getCode())) return "Логин не может быть пустым";
+                    return fieldError.getDefaultMessage();
+                })
+                .findFirst()
+                .orElse(e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
+
         log.warn("Ошибка валидации: {}", message);
-        return Map.of("error", message != null ? message : "Ошибка валидации");
+        return Map.of("error", message);
     }
 
     @ExceptionHandler(NotFoundException.class)
