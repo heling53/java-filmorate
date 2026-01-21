@@ -33,6 +33,7 @@ public class FilmDbStorage implements FilmStorage {
     public Film getFilmById(Integer id) {
         String sql = "SELECT * FROM films WHERE id = ?";
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, id);
+        return films.stream().findFirst().orElse(null); // Возвращаем null, а не кидаем исключение здесь
     }
 
     @Override
