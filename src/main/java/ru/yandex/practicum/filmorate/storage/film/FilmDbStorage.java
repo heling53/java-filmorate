@@ -3,14 +3,14 @@ package ru.yandex.practicum.filmorate.storage.film;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
-import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.HashSet;
 import java.util.List;
 
@@ -47,47 +47,29 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film createFilm(Film film) {
-        if (film.getMpa() != null && film.getMpa().getId() != null) {
-            if (!mpaExists(film.getMpa().getId())) {
-                return null;
-            }
-        }
-
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            for (Genre genre : film.getGenres()) {
-                if (!genreExists(genre.getId())) {
-                    return null;
-                }
-            }
-        }
-
-        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
+        String sqlQuery = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
                 "VALUES (?, ?, ?, ?, ?)";
-        jdbcTemplate.update(
-                sql,
-                film.getName(),
-                film.getDescription(),
-                Date.valueOf(film.getReleaseDate()),
-                film.getDuration(),
-                film.getMpa() != null ? film.getMpa().getId() : null
-        );
 
-        Integer filmId = jdbcTemplate.queryForObject(
-                "SELECT LAST_INSERT_ID()",
-                Integer.class
-        );
+        KeyHolder keyHolder = new GeneratedKeyHolder();
 
-        if (filmId == null) {
-            filmId = jdbcTemplate.queryForObject(
-                    "SELECT MAX(id) FROM films",
-                    Integer.class
-            );
-        }
+        jdbcTemplate.update(connection -> {
+            PreparedStatement stmt = connection.prepareStatement(sqlQuery, new String[]{"film_id"});
+            stmt.setString(1, film.getName());
+            stmt.setString(2, film.getDescription());
+            stmt.setDate(3, Date.valueOf(film.getReleaseDate()));
+            stmt.setInt(4, film.getDuration());
+            if (film.getMpa() != null) {
+                stmt.setInt(5, film.getMpa().getId());
+            } else {
+                stmt.setNull(5, Types.INTEGER);
+            }
+            return stmt;
+        }, keyHolder);
 
-        film.setId(filmId);
-        saveGenres(film);
+        film.setId(keyHolder.getKey().intValue());
         return film;
     }
+
 
     @Override
     public Film updateFilm(Film film) {

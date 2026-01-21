@@ -1,8 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -11,6 +13,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @RestControllerAdvice
@@ -26,14 +29,15 @@ public class ErrorHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> {
-                    if (error.getCode().equals("NotBlank")) return error.getDefaultMessage();
-                    return error.getDefaultMessage();
-                })
-                .findFirst()
-                .orElse("Ошибка валидации");
+        Optional<FieldError> notBlankError = e.getBindingResult().getFieldErrors().stream()
+                .filter(error -> "NotBlank".equals(error.getCode()))
+                .findFirst();
 
+        String message = notBlankError
+                .map(FieldError::getDefaultMessage)
+                .orElseGet(() -> e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
+
+        log.warn("Ошибка валидации: {}", message);
         return Map.of("error", message);
     }
 
@@ -44,11 +48,18 @@ public class ErrorHandler {
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler(EmptyResultDataAccessException.class)
+    @ExceptionHandler({EmptyResultDataAccessException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleEmptyResultDataAccess(EmptyResultDataAccessException e) {
-        log.warn("404 Not Found (empty result): {}", e.getMessage());
+    public Map<String, String> handleEmptyResultDataAccess(Exception e) {
+        log.warn("404 Not Found (Data access): {}", e.getMessage());
         return Map.of("error", "Запрашиваемый объект не найден");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT) // Или BAD_REQUEST, зависит от логики
+    public Map<String, String> handleDataIntegrity(DataIntegrityViolationException e) {
+        log.warn("Конфликт данных в БД: {}", e.getMessage());
+        return Map.of("error", "Нарушение целостности данных");
     }
 
     @ExceptionHandler(Exception.class)
