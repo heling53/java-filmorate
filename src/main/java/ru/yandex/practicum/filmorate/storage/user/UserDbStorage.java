@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.ResultSet;
@@ -39,8 +38,10 @@ public class UserDbStorage implements UserStorage {
         );
 
         Integer id = jdbcTemplate.queryForObject(
-                "SELECT MAX(id) FROM users",
-                Integer.class
+                "SELECT id FROM users WHERE email = ? AND login = ?",
+                Integer.class,
+                user.getEmail(),
+                user.getLogin()
         );
         user.setId(id);
         return user;
@@ -59,7 +60,7 @@ public class UserDbStorage implements UserStorage {
         );
 
         if (updated == 0) {
-            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
+            return null;
         }
         return user;
     }
@@ -70,16 +71,13 @@ public class UserDbStorage implements UserStorage {
         List<User> users = jdbcTemplate.query(sql, this::mapRowToUser, id);
 
         if (users.isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + id + " не найден");
+            return null;
         }
         return users.getFirst();
     }
 
     @Override
     public void addFriend(Integer userId, Integer friendId) {
-        checkUserExists(userId);
-        checkUserExists(friendId);
-
         String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
 
@@ -93,17 +91,12 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void removeFriend(Integer userId, Integer friendId) {
-        checkUserExists(userId);
-        checkUserExists(friendId);
-
         String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
     public List<User> getFriends(Integer userId) {
-        checkUserExists(userId);
-
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friendships f ON u.id = f.friend_id " +
                 "WHERE f.user_id = ? " +
@@ -114,9 +107,6 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getCommonFriends(Integer userId1, Integer userId2) {
-        checkUserExists(userId1);
-        checkUserExists(userId2);
-
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friendships f1 ON u.id = f1.friend_id " +
                 "JOIN friendships f2 ON u.id = f2.friend_id " +
@@ -126,12 +116,10 @@ public class UserDbStorage implements UserStorage {
         return jdbcTemplate.query(sql, this::mapRowToUser, userId1, userId2);
     }
 
-    private void checkUserExists(Integer userId) {
+    private boolean userExists(Integer userId) {
         String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId);
-        if (count == null || count == 0) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
+        return count != null && count > 0;
     }
 
     private User mapRowToUser(ResultSet rs, int rowNum) throws SQLException {

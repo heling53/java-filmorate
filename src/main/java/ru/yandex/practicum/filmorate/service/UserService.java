@@ -18,16 +18,26 @@ public class UserService {
     private final UserStorage userStorage;
 
     public User createUser(User user) {
-        if (user.getLogin() == null) {
-            throw new ValidationException("Логин не может быть null");
+        log.info("Создание пользователя. Login: {}, Name: {}, Email: {}",
+                user.getLogin(), user.getName(), user.getEmail());
+
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
+            throw new ValidationException("Логин не может быть пустым");
         }
 
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
+            log.info("Установлено имя из логина: {}", user.getLogin());
         }
 
-        log.info("Создание пользователя: {}", user.getLogin());
-        return userStorage.createUser(user);
+        try {
+            User created = userStorage.createUser(user);
+            log.info("Пользователь создан с ID: {}", created.getId());
+            return created;
+        } catch (Exception e) {
+            log.error("Ошибка при создании пользователя: ", e);
+            throw new RuntimeException("Ошибка при создании пользователя: " + e.getMessage());
+        }
     }
 
     public User updateUser(User user) {
@@ -37,7 +47,7 @@ public class UserService {
 
         if (user.getName() == null || user.getName().isBlank()) {
             if (user.getLogin() == null) {
-                throw new ValidationException("Логин не может быть null при установке имени");
+                throw new ValidationException("Логин не может быть null");
             }
             user.setName(user.getLogin());
         }
@@ -48,7 +58,11 @@ public class UserService {
         }
 
         log.info("Обновление пользователя с id={}", user.getId());
-        return userStorage.updateUser(user);
+        User updated = userStorage.updateUser(user);
+        if (updated == null) {
+            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
+        }
+        return updated;
     }
 
     public List<User> getAllUsers() {
