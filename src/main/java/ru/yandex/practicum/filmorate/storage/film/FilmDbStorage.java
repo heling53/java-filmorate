@@ -132,14 +132,20 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getPopularFilms(Integer count) {
-        String sql = "SELECT f.* FROM films f " +
-                "LEFT JOIN (SELECT film_id, COUNT(user_id) AS cnt FROM film_likes GROUP BY film_id) l " +
-                "ON f.id = l.film_id " +
-                "ORDER BY l.cnt DESC, f.id ASC " +
+        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count " +
+                "FROM films f " +
+                "LEFT JOIN mpa m ON f.mpa_id = m.id " +
+                "LEFT JOIN film_likes l ON f.id = l.film_id " +
+                "GROUP BY f.id, m.name " +
+                "ORDER BY likes_count DESC " +
                 "LIMIT ?";
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
-        films.forEach(this::loadGenres);
+
+        for (Film film : films) {
+            loadGenres(film);
+        }
+
         return films;
     }
 
@@ -173,17 +179,13 @@ public class FilmDbStorage implements FilmStorage {
 
     private void loadGenres(Film film) {
         String sql = "SELECT g.id, g.name FROM genres g " +
-                "JOIN film_genres fg ON g.id = fg.genre_id WHERE fg.film_id = ? " +
-                "ORDER BY g.id";
+                "JOIN film_genres fg ON g.id = fg.genre_id " +
+                "WHERE fg.film_id = ? ORDER BY g.id";
 
-        List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> {
-            return new Genre(
-                    rs.getInt("id"),
-                    rs.getString("name")
-            );
-        }, film.getId());
+        List<Genre> genres = jdbcTemplate.query(sql, (rs, rowNum) ->
+                new Genre(rs.getInt("id"), rs.getString("name")), film.getId());
 
-        film.setGenres(new java.util.LinkedHashSet<>(genreList));
+        film.setGenres(new java.util.LinkedHashSet<>(genres));
     }
 
     private void saveGenres(Film film) {
