@@ -28,9 +28,12 @@ public class UserController {
 
     @PutMapping
     public User update(@Valid @RequestBody User user) {
-        if (user.getId() == null || user.getId() < 1) { // Лучше добавить проверку на отрицательный ID
-            throw new NotFoundException("ID пользователя не может быть пустым или отрицательным");
+        log.info("PUT /users - обновление пользователя с id={}", user.getId());
+
+        if (user.getId() == null || user.getId() <= 0) {
+            throw new NotFoundException("ID пользователя должен быть положительным числом");
         }
+
         return userService.updateUser(user);
     }
 

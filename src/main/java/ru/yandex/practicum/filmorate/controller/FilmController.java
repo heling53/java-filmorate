@@ -32,9 +32,12 @@ public class FilmController {
 
     @PutMapping
     public Film update(@Valid @RequestBody Film film) {
-        if (film.getId() == null || film.getId() < 1) {
-            throw new NotFoundException("ID фильма не может быть пустым или отрицательным");
+        log.info("PUT /films - обновление фильма с id={}", film.getId());
+
+        if (film.getId() == null || film.getId() <= 0) {
+            throw new NotFoundException("ID фильма должен быть положительным числом");
         }
+
         validateFilmReleaseDate(film);
         return filmService.updateFilm(film);
     }

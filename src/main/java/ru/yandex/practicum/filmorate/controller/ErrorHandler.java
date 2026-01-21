@@ -27,11 +27,9 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
-
-        log.warn("400 Bad Request: {}", message);
+        log.warn("Ошибка валидации: {}", message);
         return Map.of("error", message != null ? message : "Ошибка валидации");
     }
-
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Map<String, String> handleNotFound(NotFoundException e) {
