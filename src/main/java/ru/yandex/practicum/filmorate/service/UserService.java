@@ -25,7 +25,7 @@ public class UserService {
 
     public User updateUser(User user) {
         if (user.getId() == null || userStorage.getUserById(user.getId()) == null) {
-            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
+            throw new NotFoundException("Пользователь с указанным id не найден");
         }
 
         if (user.getName() == null || user.getName().isBlank()) {
