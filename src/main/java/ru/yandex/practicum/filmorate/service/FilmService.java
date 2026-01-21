@@ -23,7 +23,7 @@ public class FilmService {
 
     public Film createFilm(Film film) {
         if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(CINEMA_BIRTHDAY)) {
-            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+            throw new ValidationException("Дата релиза должна быть не раньше 28 декабря 1895 года");
         }
         if (film.getMpa() != null) {
             Integer count = jdbcTemplate.queryForObject(
