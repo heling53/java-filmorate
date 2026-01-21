@@ -49,7 +49,6 @@ public class FilmDbStorage implements FilmStorage {
     public Film createFilm(Film film) {
         String sqlQuery = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
                 "VALUES (?, ?, ?, ?, ?)";
-
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -67,6 +66,8 @@ public class FilmDbStorage implements FilmStorage {
         }, keyHolder);
 
         film.setId(keyHolder.getKey().intValue());
+
+        saveGenres(film);
         return film;
     }
 
@@ -174,31 +175,33 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void loadGenres(Film film) {
-        List<Genre> genres = jdbcTemplate.query(
-                "SELECT g.id, g.name FROM genres g " +
-                        "JOIN film_genres fg ON g.id = fg.genre_id WHERE fg.film_id = ? " +
-                        "ORDER BY g.id",
-                (rs, rowNum) -> {
-                    Genre genre = new Genre();
-                    genre.setId(rs.getInt("id"));
-                    genre.setName(rs.getString("name"));
-                    return genre;
-                },
-                film.getId()
-        );
-        film.setGenres(new HashSet<>(genres));
+        String sql = "SELECT g.id, g.name FROM genres g " +
+                "JOIN film_genres fg ON g.id = fg.genre_id WHERE fg.film_id = ? " +
+                "ORDER BY g.id";
+        List<Genre> genres = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Genre genre = new Genre();
+            genre.setId(rs.getInt("id"));
+            genre.setName(rs.getString("name"));
+            return genre;
+        }, film.getId());
+
+        film.setGenres(new java.util.LinkedHashSet<>(genres));
     }
 
     private void saveGenres(Film film) {
         if (film.getGenres() == null || film.getGenres().isEmpty()) {
             return;
         }
+        List<Integer> distinctGenreIds = film.getGenres().stream()
+                .map(Genre::getId)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
 
-        for (Genre genre : film.getGenres()) {
+        for (Integer genreId : distinctGenreIds) {
             jdbcTemplate.update(
                     "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)",
                     film.getId(),
-                    genre.getId()
+                    genreId
             );
         }
     }

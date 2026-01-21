@@ -84,8 +84,9 @@ public class UserDbStorage implements UserStorage {
         return users.getFirst();
     }
 
+    @Override
     public void addFriend(Integer userId, Integer friendId) {
-        String sql = "INSERT INTO user_friends (user_id, friend_id) VALUES (?, ?)";
+        String sql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, userId, friendId);
     }
 
@@ -101,7 +102,6 @@ public class UserDbStorage implements UserStorage {
                 "JOIN friendships f ON u.id = f.friend_id " +
                 "WHERE f.user_id = ? " +
                 "ORDER BY u.id";
-
         return jdbcTemplate.query(sql, this::mapRowToUser, userId);
     }
 
@@ -112,7 +112,6 @@ public class UserDbStorage implements UserStorage {
                 "JOIN friendships f2 ON u.id = f2.friend_id " +
                 "WHERE f1.user_id = ? AND f2.user_id = ? " +
                 "ORDER BY u.id";
-
         return jdbcTemplate.query(sql, this::mapRowToUser, userId1, userId2);
     }
 
