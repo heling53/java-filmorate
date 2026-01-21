@@ -18,26 +18,10 @@ public class UserService {
     private final UserStorage userStorage;
 
     public User createUser(User user) {
-        log.info("Создание пользователя. Login: {}, Name: {}, Email: {}",
-                user.getLogin(), user.getName(), user.getEmail());
-
-        if (user.getLogin() == null || user.getLogin().isBlank()) {
-            throw new ValidationException("Логин не может быть пустым");
-        }
-
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
-            log.info("Установлено имя из логина: {}", user.getLogin());
         }
-
-        try {
-            User created = userStorage.createUser(user);
-            log.info("Пользователь создан с ID: {}", created.getId());
-            return created;
-        } catch (Exception e) {
-            log.error("Ошибка при создании пользователя: ", e);
-            throw new RuntimeException("Ошибка при создании пользователя: " + e.getMessage());
-        }
+        return userStorage.createUser(user);
     }
 
     public User updateUser(User user) {
