@@ -19,7 +19,7 @@ public class UserService {
 
     public User createUser(User user) {
         if (user.getLogin() == null) {
-            throw new RuntimeException("Логин не может быть null");
+            throw new ValidationException("Логин не может быть null");
         }
 
         if (user.getName() == null || user.getName().isBlank()) {
@@ -35,13 +35,16 @@ public class UserService {
             throw new ValidationException("ID пользователя не может быть null");
         }
 
+        if (user.getName() == null || user.getName().isBlank()) {
+            if (user.getLogin() == null) {
+                throw new ValidationException("Логин не может быть null при установке имени");
+            }
+            user.setName(user.getLogin());
+        }
+
         User existingUser = userStorage.getUserById(user.getId());
         if (existingUser == null) {
             throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
-        }
-
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
         }
 
         log.info("Обновление пользователя с id={}", user.getId());
