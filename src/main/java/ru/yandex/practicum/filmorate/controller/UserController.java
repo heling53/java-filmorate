@@ -27,13 +27,8 @@ public class UserController {
     }
 
     @PutMapping
-    public User update(@Valid @RequestBody User user) {
+    public User update(@RequestBody User user) {
         log.info("PUT /users - обновление пользователя");
-
-        if (user.getId() == null) {
-            throw new ValidationException("ID пользователя не может быть пустым");
-        }
-
         return userService.updateUser(user);
     }
 
