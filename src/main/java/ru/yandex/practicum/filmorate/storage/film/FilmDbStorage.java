@@ -24,18 +24,25 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getAllFilms() {
-        List<Film> films = jdbcTemplate.query(
-                "SELECT * FROM films ORDER BY id",
-                this::mapRowToFilm
-        );
-        films.forEach(this::loadGenres);
+        String sql = "SELECT f.*, m.name AS mpa_name " +
+                "FROM films f " +
+                "LEFT JOIN mpa m ON f.mpa_id = m.id " +
+                "ORDER BY f.id";
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
+
+        for (Film film : films) {
+            loadGenres(film);
+        }
         return films;
     }
 
     @Override
     public Film getFilmById(Integer id) {
-        String sql = "SELECT f.*, m.name AS mpa_name FROM films f " +
-                "LEFT JOIN mpa m ON f.mpa_id = m.id WHERE f.id = ?";
+        String sql = "SELECT f.*, m.name AS mpa_name " +
+                "FROM films f " +
+                "LEFT JOIN mpa m ON f.mpa_id = m.id " +
+                "WHERE f.id = ?";
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, id);
 
@@ -144,9 +151,10 @@ public class FilmDbStorage implements FilmStorage {
         film.setReleaseDate(rs.getDate("release_date").toLocalDate());
         film.setDuration(rs.getInt("duration"));
 
-        Mpa mpa = new Mpa();
-        mpa.setId(rs.getInt("mpa_id"));
-        mpa.setName(rs.getString("mpa_name"));
+        Mpa mpa = new Mpa(
+                rs.getInt("mpa_id"),
+                rs.getString("mpa_name")
+        );
         film.setMpa(mpa);
 
         return film;
