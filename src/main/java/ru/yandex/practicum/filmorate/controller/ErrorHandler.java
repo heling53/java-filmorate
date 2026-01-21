@@ -16,20 +16,42 @@ import java.util.Map;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler({ValidationException.class, MethodArgumentNotValidException.class})
+    @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidation(Exception e) {
-        String message;
-        if (e instanceof MethodArgumentNotValidException) {
-            message = ((MethodArgumentNotValidException) e).getBindingResult()
-                    .getFieldErrors().stream()
-                    .findFirst()
-                    .map(err -> err.getDefaultMessage())
-                    .orElse("Ошибка валидации");
-        } else {
-            message = e.getMessage();
-        }
-        log.warn("400 Bad Request: {}", message);
+    public Map<String, String> handleValidation(ValidationException e) {
+        log.warn("400 Bad Request (ValidationException): {}", e.getMessage());
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult()
+                .getFieldErrors().stream()
+                .findFirst()
+                .map(err -> {
+                    String errorMsg = err.getDefaultMessage();
+                    if (errorMsg != null && !errorMsg.isEmpty()) {
+                        return errorMsg;
+                    }
+
+                    String fieldName = err.getField();
+                    switch (fieldName) {
+                        case "login":
+                            return "Логин не может быть пустым";
+                        case "name":
+                            return "Название не может быть пустым";
+                        case "duration":
+                            return "Продолжительность фильма должна быть положительным числом";
+                        case "releaseDate":
+                            return "Дата релиза должна быть указана";
+                        default:
+                            return "Ошибка валидации поля: " + fieldName;
+                    }
+                })
+                .orElse("Ошибка валидации");
+
+        log.warn("400 Bad Request (MethodArgumentNotValidException): {}", message);
         return Map.of("error", message);
     }
 
