@@ -13,73 +13,55 @@ import java.util.List;
 import ru.yandex.practicum.filmorate.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Slf4j
-@Validated
+//@Validated
 @RestController
 @RequestMapping("/users")
+@Slf4j
 public class UserController {
+
     private final UserService userService;
 
-    @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    @GetMapping
-    public List<User> getAllUsers() {
-        log.info("Получен запрос на получение всех пользователей");
-        return userService.getAllUsers();
-    }
-
-    @GetMapping("/{id}")
-    public User getUserById(@PathVariable Integer id) {
-        log.info("Получен запрос на получение пользователя с id={}", id);
-        return userService.getUserById(id);
-    }
-
     @PostMapping
-    public User createUser(@Valid @RequestBody User user) {
-        log.info("Получен запрос на создание пользователя: {}", user);
-
-        if (user.getLogin() != null && user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не может содержать пробелы");
-        }
-
+    public User create(@Valid @RequestBody User user) {
+        log.info("POST /users");
         return userService.createUser(user);
     }
 
     @PutMapping
-    public User updateUser(@Valid @RequestBody User user) {
-        log.info("Получен запрос на обновление пользователя: {}", user);
-
-        if (user.getLogin() != null && user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не может содержать пробелы");
-        }
-
+    public User update(@Valid @RequestBody User user) {
+        log.info("PUT /users");
         return userService.updateUser(user);
     }
 
+    @GetMapping
+    public List<User> getAll() {
+        return userService.getAllUsers();
+    }
+
     @PutMapping("/{id}/friends/{friendId}")
-    public void addFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
-        log.info("Пользователь id={} добавляет в друзья пользователя id={}", id, friendId);
+    public void addFriend(@PathVariable Integer id,
+                          @PathVariable Integer friendId) {
         userService.addFriend(id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public void removeFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
-        log.info("Пользователь id={} удаляет из друзей пользователя id={}", id, friendId);
+    public void removeFriend(@PathVariable Integer id,
+                             @PathVariable Integer friendId) {
         userService.removeFriend(id, friendId);
     }
 
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable Integer id) {
-        log.info("Получен запрос на получение друзей пользователя id={}", id);
         return userService.getFriends(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
-    public List<User> getCommonFriends(@PathVariable Integer id, @PathVariable Integer otherId) {
-        log.info("Получен запрос на получение общих друзей пользователей id={} и id={}", id, otherId);
+    public List<User> getCommonFriends(@PathVariable Integer id,
+                                       @PathVariable Integer otherId) {
         return userService.getCommonFriends(id, otherId);
     }
 }
