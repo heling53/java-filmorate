@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -18,8 +19,12 @@ import java.util.List;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final JdbcTemplate jdbcTemplate;
+    private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
 
     public Film createFilm(Film film) {
+        if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(CINEMA_BIRTHDAY)) {
+            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        }
         if (film.getMpa() != null) {
             Integer count = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM mpa WHERE id = ?", Integer.class, film.getMpa().getId());
