@@ -20,4 +20,6 @@ public interface UserStorage {
     List<User> getFriends(Integer userId);
 
     List<User> getCommonFriends(Integer userId1, Integer userId2);
+
+    boolean existsById(Integer id);
 }

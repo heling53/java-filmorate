@@ -58,11 +58,15 @@ public class UserService {
     }
 
     public void removeFriend(Integer userId, Integer friendId) {
-        getUserById(userId);
-        getUserById(friendId);
+        log.info("Удаление пользователя {} из друзей пользователя {}", friendId, userId);
 
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+        if (!userStorage.existsById(friendId)) {
+            throw new NotFoundException("Пользователь с id=" + friendId + " не найден");
+        }
         userStorage.removeFriend(userId, friendId);
-        log.info("Пользователь {} удалил из друзей {}", userId, friendId);
     }
 
     public List<User> getFriends(Integer userId) {

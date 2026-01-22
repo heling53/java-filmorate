@@ -99,4 +99,11 @@ public class UserDbStorage implements UserStorage {
         user.setBirthday(rs.getDate("birthday").toLocalDate());
         return user;
     }
+
+    @Override
+    public boolean existsById(Integer id) {
+        String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
+    }
 }
