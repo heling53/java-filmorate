@@ -25,11 +25,11 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getAllFilms() {
         String sql = """
-            SELECT f.*, m.name AS mpa_name
-            FROM films AS f
-            LEFT JOIN mpa AS m ON f.mpa_id = m.id
-            ORDER BY f.id
-            """;
+                SELECT f.*, m.name AS mpa_name
+                FROM films AS f
+                LEFT JOIN mpa AS m ON f.mpa_id = m.id
+                ORDER BY f.id
+                """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
 
@@ -106,8 +106,8 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         String sql = """
-        UPDATE films SET name=?, description=?, release_date=?, duration=?, mpa_id=? WHERE id=?
-        """;
+                UPDATE films SET name=?, description=?, release_date=?, duration=?, mpa_id=? WHERE id=?
+                """;
         int updated = jdbcTemplate.update(
                 sql,
                 film.getName(),
