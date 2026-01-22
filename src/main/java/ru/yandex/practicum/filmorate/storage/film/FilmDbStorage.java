@@ -42,8 +42,8 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film getFilmById(Integer id) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name 
-                FROM films f 
+                SELECT f.*, m.name AS mpa_name
+                FROM films f
                 LEFT JOIN mpa m ON f.mpa_id = m.id
                 WHERE f.id = ?
                 """;
@@ -98,21 +98,31 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            for (Genre genre : film.getGenres()) {
-                if (!genreExists(genre.getId())) {
-                    return null;
-                }
+            List<Integer> genreIds = film.getGenres().stream()
+                    .map(Genre::getId)
+                    .distinct()
+                    .toList();
+
+            String checkGenresSql = "SELECT COUNT(*) FROM genres WHERE id IN (" +
+                    String.join(",", java.util.Collections.nCopies(genreIds.size(), "?")) + ")";
+
+            Integer foundCount = jdbcTemplate.queryForObject(checkGenresSql, Integer.class, genreIds.toArray());
+
+            if (foundCount == null || foundCount != genreIds.size()) {
+                return null;
             }
         }
 
         String sql = """
-                UPDATE films SET name=?, description=?, release_date=?, duration=?, mpa_id=? WHERE id=?
+                UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ?
+                WHERE id = ?
                 """;
+
         int updated = jdbcTemplate.update(
                 sql,
                 film.getName(),
                 film.getDescription(),
-                Date.valueOf(film.getReleaseDate()),
+                java.sql.Date.valueOf(film.getReleaseDate()),
                 film.getDuration(),
                 film.getMpa() != null ? film.getMpa().getId() : null,
                 film.getId()
@@ -122,10 +132,9 @@ public class FilmDbStorage implements FilmStorage {
             return null;
         }
 
-        jdbcTemplate.update("""
-                DELETE FROM film_genres WHERE film_id = ?
-                """, film.getId());
+        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         saveGenres(film);
+
         return film;
     }
 
@@ -148,12 +157,12 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(Integer count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count 
-                FROM films f 
-                LEFT JOIN mpa m ON f.mpa_id = m.id 
-                LEFT JOIN film_likes l ON f.id = l.film_id 
-                GROUP BY f.id, m.name 
-                ORDER BY likes_count DESC 
+                SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count
+                FROM films f
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_likes l ON f.id = l.film_id
+                GROUP BY f.id, m.name
+                ORDER BY likes_count DESC
                 LIMIT ?
                 """;
 
@@ -196,8 +205,8 @@ public class FilmDbStorage implements FilmStorage {
 
     private void loadGenres(Film film) {
         String sql = """
-                SELECT g.id, g.name FROM genres g 
-                JOIN film_genres fg ON g.id = fg.genre_id 
+                SELECT g.id, g.name FROM genres g
+                JOIN film_genres fg ON g.id = fg.genre_id
                 WHERE fg.film_id = ? ORDER BY g.id
                 """;
 
@@ -250,9 +259,9 @@ public class FilmDbStorage implements FilmStorage {
 
     private List<Genre> getGenresByFilmId(Integer filmId) {
         String sql = """
-                SELECT g.* FROM genres g 
-                                JOIN film_genres fg ON g.id = fg.genre_id 
-                                WHERE fg.film_id = ? 
+                SELECT g.* FROM genres g
+                                JOIN film_genres fg ON g.id = fg.genre_id
+                                WHERE fg.film_id = ?
                                 ORDER BY g.id
                 """;
         return jdbcTemplate.query(sql, (rs, rowNum) -> new Genre(
