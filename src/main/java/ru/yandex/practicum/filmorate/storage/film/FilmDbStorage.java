@@ -24,10 +24,12 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getAllFilms() {
-        String sql = "SELECT f.*, m.name AS mpa_name " +
-                "FROM films f " +
-                "LEFT JOIN mpa m ON f.mpa_id = m.id " +
-                "ORDER BY f.id";
+        String sql = """
+            SELECT f.*, m.name AS mpa_name
+            FROM films AS f
+            LEFT JOIN mpa AS m ON f.mpa_id = m.id
+            ORDER BY f.id
+            """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
 
@@ -39,10 +41,12 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film getFilmById(Integer id) {
-        String sql = "SELECT f.*, m.name AS mpa_name " +
-                "FROM films f " +
-                "LEFT JOIN mpa m ON f.mpa_id = m.id " +
-                "WHERE f.id = ?";
+        String sql = """
+                SELECT f.*, m.name AS mpa_name 
+                FROM films f 
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                WHERE f.id = ?
+                """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, id);
 
@@ -57,8 +61,11 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film createFilm(Film film) {
-        String sqlQuery = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
-                "VALUES (?, ?, ?, ?, ?)";
+        String sqlQuery = """
+                INSERT INTO films (name, description, release_date, duration, mpa_id)
+                VALUES (?, ?, ?, ?, ?)
+                """;
+
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -98,7 +105,9 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
 
-        String sql = "UPDATE films SET name=?, description=?, release_date=?, duration=?, mpa_id=? WHERE id=?";
+        String sql = """
+        UPDATE films SET name=?, description=?, release_date=?, duration=?, mpa_id=? WHERE id=?
+        """;
         int updated = jdbcTemplate.update(
                 sql,
                 film.getName(),
@@ -113,32 +122,40 @@ public class FilmDbStorage implements FilmStorage {
             return null;
         }
 
-        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
+        jdbcTemplate.update("""
+                DELETE FROM film_genres WHERE film_id = ?
+                """, film.getId());
         saveGenres(film);
         return film;
     }
 
     @Override
     public void addLike(Integer filmId, Integer userId) {
-        String sql = "MERGE INTO film_likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)";
+        String sql = """
+                MERGE INTO film_likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)
+                """;
         jdbcTemplate.update(sql, filmId, userId);
     }
 
     @Override
     public void removeLike(Integer filmId, Integer userId) {
-        String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
+        String sql = """
+                DELETE FROM film_likes WHERE film_id = ? AND user_id = ?
+                """;
         jdbcTemplate.update(sql, filmId, userId);
     }
 
     @Override
     public List<Film> getPopularFilms(Integer count) {
-        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count " +
-                "FROM films f " +
-                "LEFT JOIN mpa m ON f.mpa_id = m.id " +
-                "LEFT JOIN film_likes l ON f.id = l.film_id " +
-                "GROUP BY f.id, m.name " +
-                "ORDER BY likes_count DESC " +
-                "LIMIT ?";
+        String sql = """
+                SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count 
+                FROM films f 
+                LEFT JOIN mpa m ON f.mpa_id = m.id 
+                LEFT JOIN film_likes l ON f.id = l.film_id 
+                GROUP BY f.id, m.name 
+                ORDER BY likes_count DESC 
+                LIMIT ?
+                """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
 
@@ -178,9 +195,11 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void loadGenres(Film film) {
-        String sql = "SELECT g.id, g.name FROM genres g " +
-                "JOIN film_genres fg ON g.id = fg.genre_id " +
-                "WHERE fg.film_id = ? ORDER BY g.id";
+        String sql = """
+                SELECT g.id, g.name FROM genres g 
+                JOIN film_genres fg ON g.id = fg.genre_id 
+                WHERE fg.film_id = ? ORDER BY g.id
+                """;
 
         List<Genre> genres = jdbcTemplate.query(sql, (rs, rowNum) ->
                 new Genre(rs.getInt("id"), rs.getString("name")), film.getId());
@@ -230,10 +249,12 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private List<Genre> getGenresByFilmId(Integer filmId) {
-        String sql = "SELECT g.* FROM genres g " +
-                "JOIN film_genres fg ON g.id = fg.genre_id " +
-                "WHERE fg.film_id = ? " +
-                "ORDER BY g.id";
+        String sql = """
+                SELECT g.* FROM genres g 
+                                JOIN film_genres fg ON g.id = fg.genre_id 
+                                WHERE fg.film_id = ? 
+                                ORDER BY g.id
+                """;
         return jdbcTemplate.query(sql, (rs, rowNum) -> new Genre(
                 rs.getInt("id"),
                 rs.getString("name")

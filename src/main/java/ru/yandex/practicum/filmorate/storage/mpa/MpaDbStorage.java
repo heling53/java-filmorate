@@ -16,7 +16,7 @@ public class MpaDbStorage {
     private final JdbcTemplate jdbcTemplate;
 
     public List<Mpa> findAll() {
-        String sql = "SELECT * FROM mpa"; // Имя таблицы как в твоем data.sql
+        String sql = "SELECT * FROM mpa";
         return jdbcTemplate.query(sql, this::mapRowToMpa);
     }
 
