@@ -62,7 +62,9 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public List<User> getFriends(Integer userId) {
         User user = users.get(userId);
-        if (user == null) return new ArrayList<>();
+        if (user == null) {
+            return new ArrayList<>();
+        }
         return user.getFriends().stream()
                 .map(users::get)
                 .collect(Collectors.toList());
@@ -80,5 +82,10 @@ public class InMemoryUserStorage implements UserStorage {
         return commonIds.stream()
                 .map(users::get)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean existsById(Integer id) {
+        return users.containsKey(id);
     }
 }
