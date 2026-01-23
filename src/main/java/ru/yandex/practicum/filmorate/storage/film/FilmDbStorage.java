@@ -25,17 +25,20 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getAllFilms() {
         String sql = """
-                SELECT f.*, m.name AS mpa_name
-                FROM films AS f
-                LEFT JOIN mpa AS m ON f.mpa_id = m.id
-                ORDER BY f.id
-                """;
+            SELECT f.*, m.name AS mpa_name
+            FROM films AS f
+            LEFT JOIN mpa AS m ON f.mpa_id = m.id
+            ORDER BY f.id
+            """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
 
-        for (Film film : films) {
-            loadGenres(film);
+        if (films.isEmpty()) {
+            return films;
         }
+
+        loadGenresForFilms(films);
+
         return films;
     }
 
@@ -157,20 +160,22 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(Integer count) {
         String sql = """
-                SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count
-                FROM films f
-                LEFT JOIN mpa m ON f.mpa_id = m.id
-                LEFT JOIN film_likes l ON f.id = l.film_id
-                GROUP BY f.id, m.name
-                ORDER BY likes_count DESC
-                LIMIT ?
-                """;
+            SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count
+            FROM films f
+            LEFT JOIN mpa m ON f.mpa_id = m.id
+            LEFT JOIN film_likes l ON f.id = l.film_id
+            GROUP BY f.id, m.name
+            ORDER BY likes_count DESC
+            LIMIT ?
+            """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
 
-        for (Film film : films) {
-            loadGenres(film);
+        if (films.isEmpty()) {
+            return films;
         }
+
+        loadGenresForFilms(films);
 
         return films;
     }
@@ -286,5 +291,36 @@ public class FilmDbStorage implements FilmStorage {
             jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)",
                     film.getId(), genre.getId());
         }
+    }
+
+    private void loadGenresForFilms(List<Film> films) {
+        List<Integer> filmIds = films.stream()
+                .map(Film::getId)
+                .toList();
+
+        String inSql = String.join(",", java.util.Collections.nCopies(filmIds.size(), "?"));
+
+        String sql = """
+            SELECT fg.film_id, g.id, g.name
+            FROM genres g
+            JOIN film_genres fg ON g.id = fg.genre_id
+            WHERE fg.film_id IN (%s)
+            ORDER BY g.id
+            """.formatted(inSql);
+
+        jdbcTemplate.query(sql, (rs) -> {
+            int filmId = rs.getInt("film_id");
+            Genre genre = new Genre(rs.getInt("id"), rs.getString("name"));
+
+            films.stream()
+                    .filter(f -> f.getId() == filmId)
+                    .findFirst()
+                    .ifPresent(f -> {
+                        if (f.getGenres() == null) {
+                            f.setGenres(new java.util.LinkedHashSet<>());
+                        }
+                        f.getGenres().add(genre);
+                    });
+        }, filmIds.toArray());
     }
 }

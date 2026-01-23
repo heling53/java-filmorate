@@ -64,29 +64,30 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void removeFriend(Integer userId, Integer friendId) {
-        // Исправлено: удаление именно из friendships
         String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
     public List<User> getFriends(Integer userId) {
-        // Исправлено: выборка через таблицу friendships
-        String sql = "SELECT u.* FROM users u " +
-                "JOIN friendships f ON u.id = f.friend_id " +
-                "WHERE f.user_id = ? " +
-                "ORDER BY u.id";
+        String sql = """
+                SELECT u.* FROM users u
+                JOIN friendships f ON u.id = f.friend_id
+                WHERE f.user_id = ?
+                ORDER BY u.id
+                """;
         return jdbcTemplate.query(sql, this::mapRowToUser, userId);
     }
 
     @Override
     public List<User> getCommonFriends(Integer userId1, Integer userId2) {
-        // Исправлено: пересечение через friendships
-        String sql = "SELECT u.* FROM users u " +
-                "JOIN friendships f1 ON u.id = f1.friend_id " +
-                "JOIN friendships f2 ON u.id = f2.friend_id " +
-                "WHERE f1.user_id = ? AND f2.user_id = ? " +
-                "ORDER BY u.id";
+        String sql = """
+                SELECT u.* FROM users u
+                                JOIN friendships f1 ON u.id = f1.friend_id
+                                JOIN friendships f2 ON u.id = f2.friend_id
+                                WHERE f1.user_id = ? AND f2.user_id = ?
+                                ORDER BY u.id
+                """;
         return jdbcTemplate.query(sql, this::mapRowToUser, userId1, userId2);
     }
 

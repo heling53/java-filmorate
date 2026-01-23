@@ -74,7 +74,9 @@ public class InMemoryUserStorage implements UserStorage {
     public List<User> getCommonFriends(Integer userId1, Integer userId2) {
         User user1 = users.get(userId1);
         User user2 = users.get(userId2);
-        if (user1 == null || user2 == null) return new ArrayList<>();
+        if (user1 == null || user2 == null) {
+            return new ArrayList<>();
+        }
 
         Set<Integer> commonIds = new HashSet<>(user1.getFriends());
         commonIds.retainAll(user2.getFriends());
