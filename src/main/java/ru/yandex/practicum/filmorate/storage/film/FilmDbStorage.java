@@ -25,11 +25,11 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getAllFilms() {
         String sql = """
-            SELECT f.*, m.name AS mpa_name
-            FROM films AS f
-            LEFT JOIN mpa AS m ON f.mpa_id = m.id
-            ORDER BY f.id
-            """;
+                SELECT f.*, m.name AS mpa_name
+                FROM films AS f
+                LEFT JOIN mpa AS m ON f.mpa_id = m.id
+                ORDER BY f.id
+                """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
 
@@ -160,14 +160,14 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(Integer count) {
         String sql = """
-            SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count
-            FROM films f
-            LEFT JOIN mpa m ON f.mpa_id = m.id
-            LEFT JOIN film_likes l ON f.id = l.film_id
-            GROUP BY f.id, m.name
-            ORDER BY likes_count DESC
-            LIMIT ?
-            """;
+                SELECT f.*, m.name AS mpa_name, COUNT(l.user_id) AS likes_count
+                FROM films f
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_likes l ON f.id = l.film_id
+                GROUP BY f.id, m.name
+                ORDER BY likes_count DESC
+                LIMIT ?
+                """;
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
 
@@ -228,14 +228,24 @@ public class FilmDbStorage implements FilmStorage {
             return;
         }
 
-        java.util.Set<Genre> uniqueGenres = new java.util.LinkedHashSet<>(film.getGenres());
+        List<Genre> uniqueGenres = new java.util.ArrayList<>(new java.util.LinkedHashSet<>(film.getGenres()));
 
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-        for (Genre genre : uniqueGenres) {
-            jdbcTemplate.update(sql, film.getId(), genre.getId());
-        }
 
-        film.setGenres(uniqueGenres);
+        jdbcTemplate.batchUpdate(sql, new org.springframework.jdbc.core.BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(java.sql.PreparedStatement ps, int i) throws java.sql.SQLException {
+                ps.setInt(1, film.getId());
+                ps.setInt(2, uniqueGenres.get(i).getId());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return uniqueGenres.size();
+            }
+        });
+
+        film.setGenres(new java.util.LinkedHashSet<>(uniqueGenres));
     }
 
     private boolean filmExists(Integer filmId) {
@@ -285,12 +295,23 @@ public class FilmDbStorage implements FilmStorage {
         List<Genre> uniqueGenres = film.getGenres().stream()
                 .distinct()
                 .collect(Collectors.toList());
+
         film.setGenres(new LinkedHashSet<>(uniqueGenres));
 
-        for (Genre genre : uniqueGenres) {
-            jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)",
-                    film.getId(), genre.getId());
-        }
+        String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+
+        jdbcTemplate.batchUpdate(sql, new org.springframework.jdbc.core.BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(java.sql.PreparedStatement ps, int i) throws java.sql.SQLException {
+                ps.setInt(1, film.getId());
+                ps.setInt(2, uniqueGenres.get(i).getId());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return uniqueGenres.size();
+            }
+        });
     }
 
     private void loadGenresForFilms(List<Film> films) {
@@ -301,12 +322,12 @@ public class FilmDbStorage implements FilmStorage {
         String inSql = String.join(",", java.util.Collections.nCopies(filmIds.size(), "?"));
 
         String sql = """
-            SELECT fg.film_id, g.id, g.name
-            FROM genres g
-            JOIN film_genres fg ON g.id = fg.genre_id
-            WHERE fg.film_id IN (%s)
-            ORDER BY g.id
-            """.formatted(inSql);
+                SELECT fg.film_id, g.id, g.name
+                FROM genres g
+                JOIN film_genres fg ON g.id = fg.genre_id
+                WHERE fg.film_id IN (%s)
+                ORDER BY g.id
+                """.formatted(inSql);
 
         jdbcTemplate.query(sql, (rs) -> {
             int filmId = rs.getInt("film_id");
