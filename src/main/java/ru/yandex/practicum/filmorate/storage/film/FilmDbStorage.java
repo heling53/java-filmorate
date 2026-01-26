@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -64,6 +65,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film createFilm(Film film) {
+        checkMpaAndGenres(film);
+
         String sqlQuery = """
                 INSERT INTO films (name, description, release_date, duration, mpa_id)
                 VALUES (?, ?, ?, ?, ?)
@@ -86,7 +89,6 @@ public class FilmDbStorage implements FilmStorage {
         }, keyHolder);
 
         film.setId(keyHolder.getKey().intValue());
-
         saveGenres(film);
         return film;
     }
@@ -94,10 +96,34 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film updateFilm(Film film) {
-        if (film.getMpa() != null && film.getMpa().getId() != null) {
-            if (!mpaExists(film.getMpa().getId())) {
-                return null;
-            }
+        if (!filmExists(film.getId())) {
+            throw new NotFoundException("Фильм с указанным id не найден");
+        }
+
+        checkMpaAndGenres(film);
+
+        String sql = """
+                UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ?
+                WHERE id = ?
+                """;
+
+        jdbcTemplate.update(
+                sql,
+                film.getName(),
+                film.getDescription(),
+                Date.valueOf(film.getReleaseDate()),
+                film.getDuration(),
+                film.getMpa() != null ? film.getMpa().getId() : null,
+                film.getId()
+        );
+
+        saveGenres(film);
+        return getFilmById(film.getId());
+    }
+
+    private void checkMpaAndGenres(Film film) {
+        if (film.getMpa() != null && !mpaExists(film.getMpa().getId())) {
+            throw new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден");
         }
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
@@ -106,39 +132,15 @@ public class FilmDbStorage implements FilmStorage {
                     .distinct()
                     .toList();
 
-            String checkGenresSql = "SELECT COUNT(*) FROM genres WHERE id IN (" +
+            String sql = "SELECT COUNT(*) FROM genres WHERE id IN (" +
                     String.join(",", java.util.Collections.nCopies(genreIds.size(), "?")) + ")";
 
-            Integer foundCount = jdbcTemplate.queryForObject(checkGenresSql, Integer.class, genreIds.toArray());
+            Integer foundCount = jdbcTemplate.queryForObject(sql, Integer.class, genreIds.toArray());
 
             if (foundCount == null || foundCount != genreIds.size()) {
-                return null;
+                throw new NotFoundException("Один или несколько жанров не найдены");
             }
         }
-
-        String sql = """
-                UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ?
-                WHERE id = ?
-                """;
-
-        int updated = jdbcTemplate.update(
-                sql,
-                film.getName(),
-                film.getDescription(),
-                java.sql.Date.valueOf(film.getReleaseDate()),
-                film.getDuration(),
-                film.getMpa() != null ? film.getMpa().getId() : null,
-                film.getId()
-        );
-
-        if (updated == 0) {
-            return null;
-        }
-
-        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
-        saveGenres(film);
-
-        return film;
     }
 
     @Override
