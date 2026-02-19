@@ -1,71 +1,62 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
-import java.time.LocalDate;
+
 import java.util.List;
 
-@Slf4j
-@Validated
 @RestController
 @RequestMapping("/films")
+@Slf4j
+@RequiredArgsConstructor
 public class FilmController {
-    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     private final FilmService filmService;
 
-    public FilmController(FilmService filmService) {
-        this.filmService = filmService;
-    }
-
-    @GetMapping
-    public List<Film> getAllFilms() {
-        return filmService.getAllFilms();
-    }
-
-    @GetMapping("/{id}")
-    public Film getFilmById(@PathVariable Integer id) {
-        return filmService.getFilmById(id);
-    }
-
     @PostMapping
-    public Film createFilm(@Valid @RequestBody Film film) {
-        validateReleaseDate(film);
+    public Film create(@Valid @RequestBody Film film) {
+        log.info("Получен запрос на создание фильма: {}", film.getName());
         return filmService.createFilm(film);
     }
 
     @PutMapping
-    public Film updateFilm(@Valid @RequestBody Film film) {
-        validateReleaseDate(film);
+    public Film update(@Valid @RequestBody Film film) {
+        log.info("Получен запрос на обновление фильма с id: {}", film.getId());
         return filmService.updateFilm(film);
+    }
+
+    @GetMapping
+    public List<Film> findAll() {
+        log.info("Получен запрос на получение всех фильмов");
+        return filmService.getAllFilms();
+    }
+
+    @GetMapping("/{id}")
+    public Film getById(@PathVariable Integer id) {
+        log.info("Получен запрос на получение фильма с id: {}", id);
+        return filmService.getFilmById(id);
     }
 
     @PutMapping("/{id}/like/{userId}")
     public void addLike(@PathVariable Integer id, @PathVariable Integer userId) {
+        log.info("Пользователь с id: {} ставит лайк фильму с id: {}", userId, id);
         filmService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
     public void removeLike(@PathVariable Integer id, @PathVariable Integer userId) {
+        log.info("Пользователь с id: {} удаляет лайк у фильма с id: {}", userId, id);
         filmService.removeLike(id, userId);
     }
 
     @GetMapping("/popular")
     public List<Film> getPopular(@RequestParam(defaultValue = "10") Integer count) {
+        log.info("Запрос на получение {} самых популярных фильмов", count);
         return filmService.getPopularFilms(count);
-    }
-
-    private void validateReleaseDate(Film film) {
-        if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
-            throw new ValidationException(
-                    "Дата релиза должна быть не раньше 28 декабря 1895 года"
-            );
-        }
     }
 }
